@@ -48,7 +48,7 @@ mise run lgtm
 You can enable logging for troubleshooting:
 
 | Environment Variable     | Enables Logging in:     |
-|--------------------------|-------------------------|
+| ------------------------ | ----------------------- |
 | `ENABLE_LOGS_GRAFANA`    | Grafana                 |
 | `ENABLE_LOGS_LOKI`       | Loki                    |
 | `ENABLE_LOGS_PROMETHEUS` | Prometheus              |
@@ -116,10 +116,7 @@ Navigate to <http://127.0.0.1:3000> and log in with the default built-in user `a
 
 ```sh
 cd docker/
-docker build . -t grafana/otel-lgtm
-
-# Using mise
-mise build-lgtm
+docker build . -t dev-fiscozen/unified-observability
 ```
 
 ## Build and run the example app
@@ -183,7 +180,7 @@ Each example uses a different application port
 (to be able to run all applications at the same time).
 
 | Example | Service URL                           |
-|---------|---------------------------------------|
+| ------- | ------------------------------------- |
 | Java    | `curl http://127.0.0.1:8080/rolldice` |
 | Go      | `curl http://127.0.0.1:8081/rolldice` |
 | Python  | `curl http://127.0.0.1:8082/rolldice` |
