@@ -60,7 +60,7 @@ datasources:
     uid: influxdb
     url: http://influxdb:8086
     editable: true
-    database: mybucket
+    database: application
     jsonData:
       version: "InfluxQL"
       httpMode: "GET"

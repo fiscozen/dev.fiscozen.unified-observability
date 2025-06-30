@@ -43,7 +43,7 @@ exporters:
       insecure: true
   influxdb:
     endpoint: http://127.0.0.1:8086
-    bucket: mybucket
+    bucket: application
     org: "my-org"
     token: "my-token"
     timeout: 5s

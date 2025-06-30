@@ -62,5 +62,5 @@ datasources:
     editable: true
     jsonData:
       version: InfluxQL
-      database: mybucket
+      database: application
       httpMode: GET
