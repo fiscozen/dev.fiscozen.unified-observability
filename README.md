@@ -7,6 +7,7 @@ An OpenTelemetry backend in a Docker image.
 
 The `grafana/otel-lgtm` Docker image is an open source backend for OpenTelemetry
 that's intended for development, demo, and testing environments.
+This setup also supports InfluxDB as an alternative storage backend for metrics.
 If you are looking for a production-ready, out-of-the box solution to monitor applications
 and minimize MTTR (mean time to resolution) with OpenTelemetry and Prometheus,
 you should try [Grafana Cloud Application Observability][app-o11y].
@@ -48,7 +49,7 @@ mise run lgtm
 You can enable logging for troubleshooting:
 
 | Environment Variable     | Enables Logging in:     |
-|--------------------------|-------------------------|
+| ------------------------ | ----------------------- |
 | `ENABLE_LOGS_GRAFANA`    | Grafana                 |
 | `ENABLE_LOGS_LOKI`       | Loki                    |
 | `ENABLE_LOGS_PROMETHEUS` | Prometheus              |
@@ -58,6 +59,34 @@ You can enable logging for troubleshooting:
 | `ENABLE_LOGS_ALL`        | All of the above        |
 
 This has nothing to do with any application logs, which are collected by OpenTelemetry.
+
+### Using InfluxDB as metrics backend
+
+This setup supports InfluxDB as an alternative storage backend for metrics instead of Prometheus.
+To use InfluxDB, you have two configuration files available:
+
+- `otelcol-config-with-influxdb.yaml`: OpenTelemetry Collector configuration for InfluxDB
+- `grafana-datasources-with-influxdb.yaml`: Grafana datasources configuration for InfluxDB
+
+To run the setup with InfluxDB:
+
+1. Make sure you have InfluxDB running (you can use the provided Docker configuration)
+2. Update the InfluxDB connection parameters (bucket, org, token) in both configuration files
+3. Use the InfluxDB-specific configuration files when starting the services
+
+The configuration assumes:
+- InfluxDB endpoint: `http://influxdb:8086` (or `http://127.0.0.1:8086` for local setup)
+- Default bucket: `application`
+- Default organization: `my-org`
+
+#### Testing InfluxDB integration
+
+The repository includes Python test scripts to verify InfluxDB integration:
+
+- `test_otel_influxdb.py`: Basic InfluxDB integration tests
+- `test_otel_influxdb_grpc.py`: InfluxDB integration tests with gRPC
+
+These tests help ensure that the OpenTelemetry data is correctly sent to and retrieved from InfluxDB.
 
 ### Send data to vendors
 
@@ -116,10 +145,7 @@ Navigate to <http://127.0.0.1:3000> and log in with the default built-in user `a
 
 ```sh
 cd docker/
-docker build . -t grafana/otel-lgtm
-
-# Using mise
-mise build-lgtm
+docker build . -t dev-fiscozen/unified-observability
 ```
 
 ## Build and run the example app
@@ -183,7 +209,7 @@ Each example uses a different application port
 (to be able to run all applications at the same time).
 
 | Example | Service URL                           |
-|---------|---------------------------------------|
+| ------- | ------------------------------------- |
 | Java    | `curl http://127.0.0.1:8080/rolldice` |
 | Go      | `curl http://127.0.0.1:8081/rolldice` |
 | Python  | `curl http://127.0.0.1:8082/rolldice` |

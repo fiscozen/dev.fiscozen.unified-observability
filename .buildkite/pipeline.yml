@@ -1,0 +1,98 @@
+env:
+  VAR_DIR: /app/var
+  LOG_DIR: /app/var/log
+  ACCOUNT_ID_SHARED: "614406129049"
+  ECR_REGISTRY: 614406129049.dkr.ecr.eu-west-1.amazonaws.com/unified-observability
+  SHORT_COMMIT: ${BUILDKITE_COMMIT:0:7}
+  ECR_IMAGE: ${ECR_REGISTRY}:${SHORT_COMMIT}
+  ECR_LATEST_IMAGE: ${ECR_REGISTRY}:latest
+  SHARED_ECR_PUSH_ROLE: arn:aws:iam::614406129049:role/buildkite-permissions-pipeline-dev-dot-fiscozen-dot-unified-observability
+  AWS_REGION: eu-west-1
+steps:
+  - label: "Install UV"
+    key: "install-uv"
+    command: |
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+  - label: "Build docker image"
+    key: "build-docker-image"
+    depends_on: "install-uv"
+    command:
+      - env
+      - apk add --no-cache aws-cli
+      - aws ecr get-login-password | docker login --username AWS --password-stdin $(echo $ECR_REGISTRY | cut -d'/' -f1)
+      - docker build -f docker/directory/Dockerfile --push -t ${ECR_IMAGE} .
+    plugins:
+      - docker#v5.11.0:
+          image: "docker:latest"
+          always-pull: true
+          propagate-aws-auth-tokens: true
+          volumes:
+            - "/var/run/docker.sock:/var/run/docker.sock"
+      - aws-assume-role-with-web-identity#v1.0.0:
+          role-arn: ${SHARED_ECR_PUSH_ROLE}
+      - ecr#v2.8.0:
+          login: true
+          account-ids: ${ACCOUNT_ID_SHARED}
+          region: ${AWS_REGION}
+  - group: "Quality Checks"
+    if: "build.branch != pipeline.default_branch"
+    key: "quality-checks"
+    depends_on: "build-docker-image"
+    steps:
+      - label: Start SCA/SAST check
+        key: start-aikido-scan
+        soft_fail: true
+        plugins:
+          - docker#v5.11.0:
+              image: aikidosecurity/local-scanner:latest
+              command:
+                [
+                  "scan",
+                  "./",
+                  "--apikey",
+                  "$AIKIDO_LOCAL_SCANNER_TOKEN",
+                  "--gating-mode",
+                  "pr",
+                  "--repositoryname",
+                  "dev.fiscozen.unified-observability",
+                  "--branchname",
+                  "$BUILDKITE_BRANCH",
+                  "--head-commit-id",
+                  "$BUILDKITE_COMMIT",
+                  "--base-commit-id",
+                  "{{ base_commit_id }}",
+                  "--fail-on",
+                  "critical",
+                ]
+
+      - label: SCA check
+        depends_on: start-aikido-scan
+        plugins:
+          - hasura/smooth-checkout#v4.5.0:
+              repos:
+                - config:
+                    - url: git@github.com:fiscozen/fiscozen-ci-scripts.git
+                      ref: main
+                - config:
+                    - url: $BUILDKITE_REPO
+              always-pull: true
+              propagate-aws-auth-tokens: true
+        command: |
+          chmod +x ./fiscozen-ci-scripts/aikido_step.sh
+          REPO_NAME=it.fiscozen.directory source ./fiscozen-ci-scripts/aikido_step.sh
+
+  - label: Push image with latest tag
+    if: "build.branch == pipeline.default_branch"
+    key: push-latest-on-ecr-staging
+    depends_on: "test-and-lint"
+    command: |
+      docker pull ${ECR_IMAGE}
+      docker tag ${ECR_IMAGE} ${ECR_LATEST_IMAGE}
+      docker push ${ECR_LATEST_IMAGE}
+    plugins:
+      - aws-assume-role-with-web-identity#v1.2.0:
+          role-arn: ${SHARED_ECR_PUSH_ROLE}
+      - ecr#v2.8.0:
+          login: true
+          account-ids: ${ACCOUNT_ID_SHARED}
+          region: ${AWS_REGION}

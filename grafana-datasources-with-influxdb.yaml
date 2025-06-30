@@ -58,9 +58,9 @@ datasources:
   - name: InfluxDB
     type: influxdb
     uid: influxdb
-    url: http://127.0.0.1:8086
+    url: http://influxdb:8086
     editable: true
+    database: application
     jsonData:
-      version: InfluxQL
-      database: application
-      httpMode: GET
+      version: "InfluxQL"
+      httpMode: "GET"

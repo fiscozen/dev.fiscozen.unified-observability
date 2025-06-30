@@ -31,6 +31,9 @@ start_component "tempo"
 start_component "pyroscope"
 ./run-pyroscope.sh &
 
+start_component "influxdb"
+./run-influxdb.sh &
+
 echo "Waiting for the OpenTelemetry collector and the Grafana LGTM stack to start up..."
 
 # Declare arrays to store service status and elapsed times
@@ -44,6 +47,7 @@ services["prometheus"]="http://127.0.0.1:9090/api/v1/status/runtimeinfo"
 services["tempo"]="http://127.0.0.1:3200/ready"
 services["pyroscope"]="http://127.0.0.1:4040/ready"
 services["otelcol"]="http://127.0.0.1:13133/ready"
+services["influxdb"]="http://127.0.0.1:8086/health"
 
 # Initialize service_ready status to false for all services
 for service in "${!services[@]}"; do
@@ -115,6 +119,7 @@ echo "Loki: ${elapsed_times[loki]} seconds"
 echo "Prometheus: ${elapsed_times[prometheus]} seconds"
 echo "Tempo: ${elapsed_times[tempo]} seconds"
 echo "Pyroscope: ${elapsed_times[pyroscope]} seconds"
+echo "InfluxDB: ${elapsed_times[influxdb]} seconds"
 echo "OpenTelemetry collector: ${elapsed_times[otelcol]} seconds"
 echo "Total: ${total_elapsed} seconds"
 
@@ -125,5 +130,6 @@ echo "Open ports:"
 echo " - 4317: OpenTelemetry GRPC endpoint"
 echo " - 4318: OpenTelemetry HTTP endpoint"
 echo " - 3000: Grafana. User: admin, password: admin"
+echo " - 8086: InfluxDB HTTP endpoint"
 
 sleep infinity

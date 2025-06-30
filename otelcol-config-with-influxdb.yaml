@@ -42,10 +42,9 @@ exporters:
     tls:
       insecure: true
   influxdb:
-    endpoint: http://127.0.0.1:8086
+    endpoint: http://influxdb:8086
     bucket: application
     org: "my-org"
-    token: "my-token"
     timeout: 5s
     sending_queue:
       enabled: true
